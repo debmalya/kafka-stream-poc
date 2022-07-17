@@ -10,7 +10,6 @@ import org.apache.kafka.streams.processor.api.Record;
 import org.apache.kafka.streams.state.KeyValueIterator;
 import org.apache.kafka.streams.state.KeyValueStore;
 
-import com.example.pocktable.stream.StreamConsumer;
 import com.example.pocktable.util.Constants;
 
 import lombok.extern.slf4j.Slf4j;
@@ -42,6 +41,7 @@ public class ForeignExchangeProcessor implements Processor<String, String, Strin
 
 			// commit the current processing progress
 			context.commit();
+			log.info("commit completed");
 		});
 	}
 
@@ -49,8 +49,11 @@ public class ForeignExchangeProcessor implements Processor<String, String, Strin
 	public void process(Record<String, String> record) {
 		String key = record.key();
 		String value = record.value();
-		log.info("Key : {}, value : {}", key, value);
+		String existingValue = kvStore.get(record.key());
+		log.info("Key : {}, existing value : {}", key, existingValue);
 		kvStore.put(key, value);
+		existingValue = kvStore.get(record.key());
+		log.info("Key : {}, new value : {}", key, existingValue);
 	}
 
 }
