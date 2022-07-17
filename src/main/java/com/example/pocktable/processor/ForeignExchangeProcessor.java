@@ -1,4 +1,4 @@
-package com.example.pocktable;
+package com.example.pocktable.processor;
 
 import java.time.Duration;
 
@@ -10,6 +10,7 @@ import org.apache.kafka.streams.processor.api.Record;
 import org.apache.kafka.streams.state.KeyValueIterator;
 import org.apache.kafka.streams.state.KeyValueStore;
 
+import com.example.pocktable.stream.StreamConsumer;
 import com.example.pocktable.util.Constants;
 
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ForeignExchangeProcessor implements Processor<String, String, String, String> {
 
+	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ForeignExchangeProcessor.class);
 	private ProcessorContext<String, String> context;
 	private KeyValueStore<String, String> kvStore;
 
@@ -45,7 +47,10 @@ public class ForeignExchangeProcessor implements Processor<String, String, Strin
 
 	@Override
 	public void process(Record<String, String> record) {
-		kvStore.put(record.key(), record.value());
+		String key = record.key();
+		String value = record.value();
+		log.info("Key : {}, value : {}", key, value);
+		kvStore.put(key, value);
 	}
 
 }
