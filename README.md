@@ -8,3 +8,4 @@
 * Then paste ``USD|EUR,0.99`` at end press enter
 * Then paste ``USD|JPY,138.707`` at end press enter
 
+* kafka-console-consumer --bootstrap-server localhost:9092 --topic foreign_exchange --from-beginning

@@ -4,3 +4,28 @@ spring:
      bindings:
        process-in-0:
          destination: foreign_exchange
+      
+      
+         
+#         logging.level.root
+logging:
+  level:
+    root: "warn"
+    org.springframework.web: "debug"
+    org.apache.kafka.streams: "error"
+    org.hibernate: "error"
+#logging:
+# level:
+#   root: OFF
+#   org: INFO
+#     springframework:
+#       integratioin: ERROR
+#     apache:
+#       kafka:
+#         stream: 
+#           processor: 
+#             internals: 
+#               StreamThread: ERROR
+#   com:
+#     example:
+#       pocktable: INFO         
