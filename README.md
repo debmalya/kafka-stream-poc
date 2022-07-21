@@ -1,3 +1,7 @@
+## PoC
+* How to create Global KTable.
+* How to aggregate Kafka stream.
+
 ### Appendix
 * How to publish message
 * To create kafka topic ``kafka-topics --bootstrap-server localhost:9092 --create --topic foreign_exchange --partitions 4 --replication-factor 1``

@@ -19,17 +19,7 @@ public class StreamConsumer {
 
 	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(StreamConsumer.class);
 
-//	@Bean
-	public Consumer<KStream<String, String>> process0() {
 
-		return input -> {
-
-			input.foreach((key, value) -> {
-				log.info("Key : {} value :{}", key, value);
-			});
-
-		};
-	}
 
 	@SuppressWarnings("rawtypes")
 	@Bean

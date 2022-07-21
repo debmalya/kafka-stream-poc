@@ -11,9 +11,9 @@ spring:
 logging:
   level:
     root: "warn"
-    org.springframework.web: "debug"
+#    org.springframework.web: "debug"
     org.apache.kafka.streams: "error"
-    org.hibernate: "error"
+#    org.hibernate: "error"
 #logging:
 # level:
 #   root: OFF
