@@ -48,7 +48,9 @@ public class ForeignExchangeProcessor implements Processor<String, String, Strin
 			log.info("commit completed");
 		});
 
-		// Scheduling punctuator
+		// Scheduling punctuator. Wall clock time is local system time, which is
+		// advanced during each iteration of consumer poll method. Periodic function
+		// will continue to execute regardless of a whether a new message arrive.
 		punctuator = this.context.schedule(Duration.ofMinutes(5), PunctuationType.WALL_CLOCK_TIME, this::enforceTtl);
 	}
 

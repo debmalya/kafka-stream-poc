@@ -1,6 +1,11 @@
 ## PoC
 * How to create Global KTable.
 * How to aggregate Kafka stream.
+* Punctuator.
+
+## Using rancher desktop
+* tried with command ``nerdctl compose -f docker-compose.yaml up``
+* Still it has a problem ``zookeeper     |EndOfStreamException: Unable to read additional data from client, it probably closed the socket: address = /xxx.xxx.xxx.xxx:37392, session = 0x0``
 
 ### Appendix
 * How to publish message
