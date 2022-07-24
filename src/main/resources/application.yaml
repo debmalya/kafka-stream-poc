@@ -26,6 +26,6 @@ logging:
 #           processor: 
 #             internals: 
 #               StreamThread: ERROR
-#   com:
-#     example:
-#       pocktable: INFO         
+    com:
+     example:
+       pocktable: INFO         

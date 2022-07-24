@@ -42,11 +42,13 @@ public class PoCStreamAggregation {
 		final KStream<String, String> feeds = builder.stream(Constants.FOREIGN_EXCHANGE_TOPIC_NAME);
 		final KTable<String, Long> aggregated = feeds.groupByKey().count();
 
+		aggregated.toStream().to(Constants.FOREIGN_EXCHANGE_SUMMARY_TOPIC_NAME, Produced.with(stringSerde, longSerde));
 		aggregated.toStream().foreach((key, value) -> {
 			log.info("Key : {} Count :{}", key, value);
 		});
-
-		aggregated.toStream().to(Constants.FOREIGN_EXCHANGE_SUMMARY_TOPIC_NAME, Produced.with(stringSerde, longSerde));
+		final KStream<String, String> summaryFeed = builder.stream(Constants.FOREIGN_EXCHANGE_TOPIC_NAME);
+		log.info("Summary table : {}",summaryFeed.toTable());
+		
 		return new KafkaStreams(builder.build(), streamsConfiguration);
 	}
 

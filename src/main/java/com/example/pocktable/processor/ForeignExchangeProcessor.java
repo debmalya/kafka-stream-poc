@@ -3,6 +3,7 @@ package com.example.pocktable.processor;
 import java.time.Duration;
 
 import org.apache.kafka.streams.KeyValue;
+import org.apache.kafka.streams.processor.Cancellable;
 import org.apache.kafka.streams.processor.PunctuationType;
 import org.apache.kafka.streams.processor.api.Processor;
 import org.apache.kafka.streams.processor.api.ProcessorContext;
@@ -20,6 +21,9 @@ public class ForeignExchangeProcessor implements Processor<String, String, Strin
 	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ForeignExchangeProcessor.class);
 	private ProcessorContext<String, String> context;
 	private KeyValueStore<String, String> kvStore;
+
+//	When we schedule a punctuator function, it will return a cancellable object that we can use to stop the schedules function later.
+	private Cancellable punctuator;
 
 	@SuppressWarnings("unchecked")
 	@Override
@@ -43,6 +47,9 @@ public class ForeignExchangeProcessor implements Processor<String, String, Strin
 			context.commit();
 			log.info("commit completed");
 		});
+
+		// Scheduling punctuator
+		punctuator = this.context.schedule(Duration.ofMinutes(5), PunctuationType.WALL_CLOCK_TIME, this::enforceTtl);
 	}
 
 	@Override
@@ -54,6 +61,26 @@ public class ForeignExchangeProcessor implements Processor<String, String, Strin
 		kvStore.put(key, value);
 		existingValue = kvStore.get(record.key());
 		log.info("Key : {}, new value : {}", key, existingValue);
+	}
+
+	@Override
+	public void close() {
+		// Cancel the punctuator when processor is closed (e.g. during a clean shutdown
+		// of a Kafka cluster.)
+		punctuator.cancel();
+		log.info("~~~~~~~ Cancelled punctuator ~~~~~~~");
+	}
+
+	public void enforceTtl(long timestamp) {
+		try (KeyValueIterator<String, String> iterator = kvStore.all()) {
+			log.info("~~~~~~~ Printing all entries ~~~~~~~");
+			long count = 0;
+			while (iterator.hasNext()) {
+				KeyValue<String, String> entry = iterator.next();
+				count++;
+				log.info("{}. Key: {}, value: {}", count, entry.key, entry.value);
+			}
+		}
 	}
 
 }
