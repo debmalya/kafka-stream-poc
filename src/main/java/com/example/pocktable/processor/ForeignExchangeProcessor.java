@@ -1,6 +1,8 @@
 package com.example.pocktable.processor;
 
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.processor.Cancellable;
@@ -10,6 +12,8 @@ import org.apache.kafka.streams.processor.api.ProcessorContext;
 import org.apache.kafka.streams.processor.api.Record;
 import org.apache.kafka.streams.state.KeyValueIterator;
 import org.apache.kafka.streams.state.KeyValueStore;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cloud.stream.function.StreamBridge;
 
 import com.example.pocktable.util.Constants;
 
@@ -21,6 +25,8 @@ public class ForeignExchangeProcessor implements Processor<String, String, Strin
 	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ForeignExchangeProcessor.class);
 	private ProcessorContext<String, String> context;
 	private KeyValueStore<String, String> kvStore;
+	@Autowired
+	private StreamBridge streamBridge;
 
 //	When we schedule a punctuator function, it will return a cancellable object that we can use to stop the schedules function later.
 	private Cancellable punctuator;
@@ -51,7 +57,7 @@ public class ForeignExchangeProcessor implements Processor<String, String, Strin
 		// Scheduling punctuator. Wall clock time is local system time, which is
 		// advanced during each iteration of consumer poll method. Periodic function
 		// will continue to execute regardless of a whether a new message arrive.
-		punctuator = this.context.schedule(Duration.ofMinutes(5), PunctuationType.WALL_CLOCK_TIME, this::enforceTtl);
+		punctuator = this.context.schedule(Duration.ofMinutes(1), PunctuationType.WALL_CLOCK_TIME, this::enforceTtl);
 	}
 
 	@Override
@@ -80,7 +86,22 @@ public class ForeignExchangeProcessor implements Processor<String, String, Strin
 			while (iterator.hasNext()) {
 				KeyValue<String, String> entry = iterator.next();
 				count++;
-				log.info("{}. Key: {}, value: {}", count, entry.key, entry.value);
+				Map<String, String> tombstoneMessage = new HashMap<>();
+				tombstoneMessage.put(entry.key, null);
+				log.info("{}. Trying to publish tombstone message for key : {}", count, entry.key);
+				if (streamBridge != null) {
+					if (streamBridge.send("process-in-0", tombstoneMessage)) {
+						log.info("{}. published tombstone message for key : {}", count, entry.key);
+					} else {
+						log.error("{}. tombstone message for key {} cannot be published", count, entry.key);
+					}
+				} else {
+					log.error("Stream bridge is null");
+				}
+			}
+
+			if (count == 0) {
+				log.info("No entries found in {}", kvStore.name());
 			}
 		}
 	}
