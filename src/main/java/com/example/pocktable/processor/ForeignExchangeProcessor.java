@@ -14,12 +14,14 @@ import org.apache.kafka.streams.state.KeyValueIterator;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.stream.function.StreamBridge;
+import org.springframework.stereotype.Service;
 
 import com.example.pocktable.util.Constants;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@Service
 public class ForeignExchangeProcessor implements Processor<String, String, String, String> {
 
 	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ForeignExchangeProcessor.class);

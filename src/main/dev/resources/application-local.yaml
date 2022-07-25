@@ -1,0 +1,45 @@
+spring:
+ cloud:
+   stream:
+     bindings:
+       process-in-0:
+         destination: foreign_exchange
+       process-out-0:
+         destination: foreign_exchange
+     kafka:
+       streams:
+         binder:
+           applicationId: poc-ktable
+           brokers: PLAINTEXT_HOST://localhost:9092
+           autoCreateTopics: true
+           configuration:
+             default:
+               key:
+                 serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+               value:
+                 serde: org.apache.kafka.common.serialization.Serdes$StringSerde  
+           
+      
+         
+#         logging.level.root
+logging:
+  level:
+    root: "warn"
+#    org.springframework.web: "debug"
+    org.apache.kafka.streams: "error"
+#    org.hibernate: "error"
+#logging:
+# level:
+#   root: OFF
+#   org: INFO
+#     springframework:
+#       integratioin: ERROR
+#     apache:
+#       kafka:
+#         stream: 
+#           processor: 
+#             internals: 
+#               StreamThread: ERROR
+    com:
+     example:
+       pocktable: INFO         
