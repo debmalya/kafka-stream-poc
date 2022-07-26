@@ -6,6 +6,7 @@ import java.util.Properties;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.errors.SerializationException;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.processor.Cancellable;
 import org.apache.kafka.streams.processor.PunctuationType;
@@ -87,8 +88,7 @@ public class ForeignExchangeProcessor implements Processor<String, String, Strin
 		// of a Kafka cluster.)
 		punctuator.cancel();
 		log.info("~~~~~~~ Cancelled punctuator ~~~~~~~");
-		
-		
+
 	}
 
 	public void enforceTtl(long timestamp) {
@@ -103,9 +103,14 @@ public class ForeignExchangeProcessor implements Processor<String, String, Strin
 				log.info("{}. Trying to publish tombstone message for key : {}", count, entry.key);
 				if (kafkaProducer == null) {
 					kafkaProducer = getKafkaProducer();
-				} 
-				kafkaProducer.send(tombstoneRecord);
-				log.info("{}. Published tombstone message for key : {}", count, entry.key);
+				}
+				try {
+					kafkaProducer.send(tombstoneRecord);
+					log.info("{}. Published tombstone message for key : {}", count, entry.key);
+				} catch (SerializationException se) {
+					log.error("Not able to publish tombstone message reason : {}",se.getMessage());
+				}
+				
 			}
 
 			if (count == 0) {
@@ -113,15 +118,14 @@ public class ForeignExchangeProcessor implements Processor<String, String, Strin
 			}
 		}
 	}
-	
+
 	private KafkaProducer<String, String> getKafkaProducer() {
 		Properties props = new Properties();
 		props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
 		props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
 		props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
 		props.put("schema.registry.url", "http://localhost:8081");
-		
-		
+
 		KafkaProducer<String, String> kafkaProducer = new KafkaProducer<>(props);
 		log.info("~~~~ Created Kafka Producer : {}", kafkaProducer.metrics());
 		return kafkaProducer;
