@@ -108,9 +108,9 @@ public class ForeignExchangeProcessor implements Processor<String, String, Strin
 					kafkaProducer.send(tombstoneRecord);
 					log.info("{}. Published tombstone message for key : {}", count, entry.key);
 				} catch (SerializationException se) {
-					log.error("Not able to publish tombstone message reason : {}",se.getMessage());
+					log.error("Not able to publish tombstone message reason : {}", se.getMessage());
 				}
-				
+
 			}
 
 			if (count == 0) {
