@@ -1,9 +1,11 @@
 package com.example.pocktable.processor;
 
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Properties;
 
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.processor.Cancellable;
 import org.apache.kafka.streams.processor.PunctuationType;
@@ -12,8 +14,6 @@ import org.apache.kafka.streams.processor.api.ProcessorContext;
 import org.apache.kafka.streams.processor.api.Record;
 import org.apache.kafka.streams.state.KeyValueIterator;
 import org.apache.kafka.streams.state.KeyValueStore;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.stereotype.Service;
 
 import com.example.pocktable.util.Constants;
@@ -27,8 +27,8 @@ public class ForeignExchangeProcessor implements Processor<String, String, Strin
 	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ForeignExchangeProcessor.class);
 	private ProcessorContext<String, String> context;
 	private KeyValueStore<String, String> kvStore;
-	@Autowired
-	private StreamBridge streamBridge;
+
+	private KafkaProducer<String, String> kafkaProducer;
 
 //	When we schedule a punctuator function, it will return a cancellable object that we can use to stop the schedules function later.
 	private Cancellable punctuator;
@@ -67,7 +67,10 @@ public class ForeignExchangeProcessor implements Processor<String, String, Strin
 		String key = record.key();
 		String value = record.value();
 		String existingValue = kvStore.get(record.key());
-		log.info("Key : {}, existing value : {}", key, existingValue);
+		if (existingValue != null) {
+			log.info("Existing key : {}, value : {}", key, existingValue);
+		}
+
 		kvStore.put(key, value);
 		existingValue = kvStore.get(record.key());
 		log.info("Key : {}, new value : {}", key, existingValue);
@@ -75,10 +78,17 @@ public class ForeignExchangeProcessor implements Processor<String, String, Strin
 
 	@Override
 	public void close() {
+		if (kafkaProducer != null) {
+			kafkaProducer.flush();
+			kafkaProducer.close();
+			log.info("~~~~~~~ Closed Kafka producer ~~~~~~~");
+		}
 		// Cancel the punctuator when processor is closed (e.g. during a clean shutdown
 		// of a Kafka cluster.)
 		punctuator.cancel();
 		log.info("~~~~~~~ Cancelled punctuator ~~~~~~~");
+		
+		
 	}
 
 	public void enforceTtl(long timestamp) {
@@ -88,24 +98,33 @@ public class ForeignExchangeProcessor implements Processor<String, String, Strin
 			while (iterator.hasNext()) {
 				KeyValue<String, String> entry = iterator.next();
 				count++;
-				Map<String, String> tombstoneMessage = new HashMap<>();
-				tombstoneMessage.put(entry.key, null);
+				ProducerRecord<String, String> tombstoneRecord = new ProducerRecord<>(
+						Constants.FOREIGN_EXCHANGE_TOPIC_NAME, entry.key, null);
 				log.info("{}. Trying to publish tombstone message for key : {}", count, entry.key);
-				if (streamBridge != null) {
-					if (streamBridge.send("process-in-0", tombstoneMessage)) {
-						log.info("{}. published tombstone message for key : {}", count, entry.key);
-					} else {
-						log.error("{}. tombstone message for key {} cannot be published", count, entry.key);
-					}
-				} else {
-					log.error("Stream bridge is null");
-				}
+				if (kafkaProducer == null) {
+					kafkaProducer = getKafkaProducer();
+				} 
+				kafkaProducer.send(tombstoneRecord);
+				log.info("{}. Published tombstone message for key : {}", count, entry.key);
 			}
 
 			if (count == 0) {
-				log.info("No entries found in {}", kvStore.name());
+				log.info("Empty key value store: {}", kvStore.name());
 			}
 		}
+	}
+	
+	private KafkaProducer<String, String> getKafkaProducer() {
+		Properties props = new Properties();
+		props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+		props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+		props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+		props.put("schema.registry.url", "http://localhost:8081");
+		
+		
+		KafkaProducer<String, String> kafkaProducer = new KafkaProducer<>(props);
+		log.info("~~~~ Created Kafka Producer : {}", kafkaProducer.metrics());
+		return kafkaProducer;
 	}
 
 }

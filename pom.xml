@@ -67,6 +67,12 @@
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-stream-kafka</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>org.apache.kafka</groupId>
+			<artifactId>kafka-clients</artifactId>			
+		</dependency>
+		
+
 		<!-- https://mvnrepository.com/artifact/io.confluent/kafka-avro-serializer 
 			<dependency> <groupId>io.confluent</groupId> <artifactId>kafka-avro-serializer</artifactId> 
 			</dependency> -->
