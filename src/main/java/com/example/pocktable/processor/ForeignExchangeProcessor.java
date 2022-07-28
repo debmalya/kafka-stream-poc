@@ -60,7 +60,7 @@ public class ForeignExchangeProcessor implements Processor<String, String, Strin
 		// Scheduling punctuator. Wall clock time is local system time, which is
 		// advanced during each iteration of consumer poll method. Periodic function
 		// will continue to execute regardless of a whether a new message arrive.
-		punctuator = this.context.schedule(Duration.ofMinutes(1), PunctuationType.WALL_CLOCK_TIME, this::enforceTtl);
+		punctuator = this.context.schedule(Duration.ofSeconds(30), PunctuationType.WALL_CLOCK_TIME, this::enforceTtl);
 	}
 
 	@Override
@@ -74,7 +74,7 @@ public class ForeignExchangeProcessor implements Processor<String, String, Strin
 
 		kvStore.put(key, value);
 		existingValue = kvStore.get(record.key());
-		log.info("Key : {}, new value : {}", key, existingValue);
+		log.info("Key : {}, value : {}", key, existingValue);
 	}
 
 	@Override
@@ -98,24 +98,30 @@ public class ForeignExchangeProcessor implements Processor<String, String, Strin
 			while (iterator.hasNext()) {
 				KeyValue<String, String> entry = iterator.next();
 				count++;
-				ProducerRecord<String, String> tombstoneRecord = new ProducerRecord<>(
-						Constants.FOREIGN_EXCHANGE_TOPIC_NAME, entry.key, null);
-				log.info("{}. Trying to publish tombstone message for key : {}", count, entry.key);
-				if (kafkaProducer == null) {
-					kafkaProducer = getKafkaProducer();
-				}
-				try {
-					kafkaProducer.send(tombstoneRecord);
-					log.info("{}. Published tombstone message for key : {}", count, entry.key);
-				} catch (SerializationException se) {
-					log.error("Not able to publish tombstone message reason : {}", se.getMessage());
-				}
+				generateTombstoneMessage(count, entry);
 
 			}
 
 			if (count == 0) {
 				log.info("Empty key value store: {}", kvStore.name());
+			} else {
+				log.info("No. of entries in store : {}", count);
 			}
+		}
+	}
+
+	private void generateTombstoneMessage(long count, KeyValue<String, String> entry) {
+		ProducerRecord<String, String> tombstoneRecord = new ProducerRecord<>(Constants.FOREIGN_EXCHANGE_TOPIC_NAME,
+				entry.key, null);
+		log.info("{}. Trying to publish tombstone message for key : {}", count, entry.key);
+		if (kafkaProducer == null) {
+			kafkaProducer = getKafkaProducer();
+		}
+		try {
+			kafkaProducer.send(tombstoneRecord);
+			log.info("{}. Published tombstone message for key : {}", count, entry.key);
+		} catch (SerializationException se) {
+			log.error("Not able to publish tombstone message reason : {}", se.getMessage());
 		}
 	}
 
@@ -124,9 +130,9 @@ public class ForeignExchangeProcessor implements Processor<String, String, Strin
 		props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
 		props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
 		props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-		props.put("schema.registry.url", "http://localhost:8081");
 
 		KafkaProducer<String, String> kafkaProducer = new KafkaProducer<>(props);
+		
 		log.info("~~~~ Created Kafka Producer : {}", kafkaProducer.metrics());
 		return kafkaProducer;
 	}

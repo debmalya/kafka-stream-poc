@@ -1,15 +1,22 @@
 spring:
+ application:
+    name: poc-kafka
  cloud:
    stream:
+     function: 
+       definition: process
      bindings:
        process-in-0:
          destination: foreign_exchange
-       process-out-0:
-         destination: foreign_exchange
+#       process-out-0:
+#         destination: foreign_exchange
      kafka:
-       streams:
+#       streams:
+#         bindings:
+#           process-in-0:
+#             consumer:
+#               materializedAs: foreign-exchange-materialized-store
          binder:
-           applicationId: poc-ktable
            brokers: PLAINTEXT_HOST://localhost:9092
            autoCreateTopics: true
            configuration:

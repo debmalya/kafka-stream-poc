@@ -2,6 +2,9 @@
 * How to create Global KTable.
 * How to aggregate Kafka stream.
 * Punctuator.
+* KafkaProducer.
+* Processor API.
+* Tombstone message generation.
 
 ## Using rancher desktop
 * tried with command ``nerdctl compose -f docker-compose.yaml up``
