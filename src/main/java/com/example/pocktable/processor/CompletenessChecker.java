@@ -46,7 +46,6 @@ public class CompletenessChecker implements Processor<String, String, String, Lo
 
 	@Override
 	public void close() {
-		// TODO Auto-generated method stub
 		Processor.super.close();
 	}
 
@@ -59,7 +58,7 @@ public class CompletenessChecker implements Processor<String, String, String, Lo
 		long rowNumber = Long.parseLong(fileOffset);
 		log.info("File name : {} row number : {}", fileName, rowNumber);
 		if (rowNumber == 1) {
-			long totalNumberOfRows = processHeader(record.value());
+			long totalNumberOfRows = processHeader(fileName,record.value());
 			kvStore.put(fileName, totalNumberOfRows);
 		} else {
 			if (isLastRow(fileName, rowNumber)) {
@@ -78,11 +77,12 @@ public class CompletenessChecker implements Processor<String, String, String, Lo
 		return false;
 	}
 
-	private long processHeader(String headerRow) {
+	private long processHeader(String headerRow, String fileName) {
 		String[] values = headerRow.split("\\|");
 		long totalNumberOfRows = 0;
 		if (values.length > 1) {
 			totalNumberOfRows = Long.valueOf(values[values.length - 2]);
+			kvStore.put(fileName, totalNumberOfRows);
 		}
 		return totalNumberOfRows;
 	}
