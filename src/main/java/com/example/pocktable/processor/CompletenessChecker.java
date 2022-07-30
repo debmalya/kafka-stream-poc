@@ -77,11 +77,11 @@ public class CompletenessChecker implements Processor<String, String, String, Lo
 		return false;
 	}
 
-	private long processHeader(String headerRow, String fileName, int indexFromLast) {
+	private long processHeader(String headerRow, String fileName, int rowNumberIndex) {
 		String[] values = headerRow.split("\\|");
 		long totalNumberOfRows = 0;
 		if (values.length > 1) {
-			totalNumberOfRows = Long.valueOf(values[values.length - indexFromLast]);
+			totalNumberOfRows = Long.parseLong(values[rowNumberIndex]);
 			kvStore.put(fileName, totalNumberOfRows);
 		}
 		return totalNumberOfRows;
